@@ -25,7 +25,7 @@ class SymbolicCalcScreen(QWidget):
         left_layout = QVBoxLayout(left_widget)
         left_layout.setSpacing(10)
 
-        title_label = QLabel("Cálculo Simbólico")
+        title_label = QLabel("Gradiente y Hessiano")
         title_label.setStyleSheet(
             "font-size: 18px; font-weight: bold; margin-bottom: 10px;"
         )
