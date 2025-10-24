@@ -47,6 +47,7 @@ class NewtonRaphsonScreen(QWidget):
             ("maxiter", "Máx. Iteraciones", "8"),
         ]
 
+        left_layout.addWidget(title_label)
         for name, text, default_val in param_list:
             label = QLabel(text)
             label.setFont(param_font)
