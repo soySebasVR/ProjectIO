@@ -72,8 +72,8 @@ class GoldenSectionScreen(QWidget):
         results_frame = QFrame()
         results_frame.setFrameShape(QFrame.Shape.StyledPanel)
         results_layout = QHBoxLayout(results_frame)
-        self.result_p_label = QLabel("Precio óptimo: --")
-        self.result_i_label = QLabel("Ingreso máximo: --")
+        self.result_p_label = QLabel("Óptimo: --")
+        self.result_i_label = QLabel("Máximo: --")
         results_layout.addWidget(self.result_p_label)
         results_layout.addWidget(self.result_i_label)
 
@@ -156,8 +156,8 @@ class GoldenSectionScreen(QWidget):
         )
         I_opt = ingreso(p_opt)
 
-        self.result_p_label.setText(f"<b>Precio óptimo:</b> {p_opt*100:.2f} $")
-        self.result_i_label.setText(f"<b>Ingreso máximo:</b> {I_opt*1000:.2f} $")
+        self.result_p_label.setText(f"<b>Óptimo:</b> {p_opt*100:.2f} $")
+        self.result_i_label.setText(f"<b>Máximo:</b> {I_opt*1000:.2f} $")
 
         self.populate_table(tabla)
         self.plot_function(ingreso, p["a_int"], p["b_int"], puntos, p_opt, I_opt)
