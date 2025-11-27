@@ -1,3 +1,4 @@
+import sympy as sp
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 
@@ -40,11 +41,8 @@ class NewtonRaphsonScreen(QWidget):
 
         # (nombre_interno, "Texto para mostrar", valor_por_defecto)
         param_list: list[tuple[str, str, str]] = [
-            ("w", "Frecuencia Angular (w)", "376.9911"),
-            ("L", "Inductancia (L)", "0.1"),
-            ("Cn", "Capacitancia Inicial (Cn)", "1e-5"),
-            ("tol", "Tolerancia (tol)", "1e-6"),
-            ("maxiter", "Máx. Iteraciones", "8"),
+            ("f", "Función f(x)", "x**3 - 2*x - 5"),
+            ("x0", "Valor Inicial (x0)", "2.0"),
         ]
 
         left_layout.addWidget(title_label)
@@ -76,7 +74,7 @@ class NewtonRaphsonScreen(QWidget):
         self.table_widget = QTableWidget()
         self.table_widget.setColumnCount(5)
         self.table_widget.setHorizontalHeaderLabels(
-            ["Iteración", "C", "G(x)", "Error", "Porcentaje"]
+            ["Iteración", "x", "x_next", "Error", "Porcentaje"]
         )
         self.table_widget.horizontalHeader().setSectionResizeMode(
             QHeaderView.ResizeMode.Stretch
@@ -100,31 +98,39 @@ class NewtonRaphsonScreen(QWidget):
 
     def run_calculation(self):
         try:
-            p: dict[str, float] = {
-                name: float(widget.text()) for name, widget in self.params.items()
-            }
-            p["maxiter"] = int(p["maxiter"])
-        except ValueError:
+            # Parse numeric parameters
+            x0 = float(self.params["x0"].text())
+            
+            # Parse function
+            f_str = self.params["f"].text()
+            x_sym = sp.Symbol("x")
+            f_expr = sp.sympify(f_str)
+            df_expr = sp.diff(f_expr, x_sym)
+            
+            # Create callable functions
+            f_func = sp.lambdify(x_sym, f_expr, "numpy")
+            df_func = sp.lambdify(x_sym, df_expr, "numpy")
+
+        except Exception as e:
             QMessageBox.critical(
                 self,
                 "Error de Entrada",
-                "Por favor, ingresa solo valores numéricos válidos.",
+                f"Error al procesar la función o los parámetros:\n{str(e)}",
             )
             return
 
-        def f(C: float, w: float, L: float) -> float:
-            return w * L - 1.0 / (w * C)
-
-        def df(C: float, w: float) -> float:
-            if w == 0 or C == 0:
-                return float("inf")
-            return 1.0 / (w * C * C)
-
         history: list[tuple[int, float, float, float, float]] = []
-        C: float = p["Cn"]
-        for k in range(p["maxiter"]):
-            f_val: float = f(C, p["w"], p["L"])
-            df_val: float = df(C, p["w"])
+        x_curr = x0
+        k = 0
+        max_safety_iter = 100  # Safety limit to prevent infinite freeze
+
+        while True:
+            try:
+                f_val = float(f_func(x_curr))
+                df_val = float(df_func(x_curr))
+            except Exception as e:
+                QMessageBox.warning(self, "Error de Evaluación", f"Error evaluando la función: {e}")
+                break
 
             if abs(df_val) < 1e-12:
                 QMessageBox.warning(
@@ -134,14 +140,24 @@ class NewtonRaphsonScreen(QWidget):
                 )
                 break
 
-            gx: float = C - f_val / df_val
-            error: float = abs((gx - C) / gx) if gx != 0 else 0
-            pct: float = error * 100
-            history.append((k, C, gx, error, pct))
+            # Newton-Raphson step: x_new = x_curr - f(x)/f'(x)
+            x_next = x_curr - f_val / df_val
+            
+            error = abs((x_next - x_curr) / x_next) if x_next != 0 else 0.0
+            pct = error * 100
+            history.append((k, x_curr, x_next, error, pct))
 
-            if abs(f_val) < p["tol"]:
+            # Stop if error is effectively 0 (or extremely small float epsilon)
+            if error == 0.0:
                 break
-            C = gx
+            
+            # Safety break
+            if k >= max_safety_iter:
+                QMessageBox.warning(self, "Límite de Seguridad", "Se alcanzaron 100 iteraciones sin llegar a error 0 absoluto.")
+                break
+
+            x_curr = x_next
+            k += 1
 
         self.populate_table(history)
 
@@ -165,14 +181,14 @@ class NewtonRaphsonScreen(QWidget):
         self.figure.clear()
         ax = self.figure.add_subplot(111)
 
-        ax.plot(iterations, c_values, marker="o", color="blue", label="C (iteraciones)")
+        ax.plot(iterations, c_values, marker="o", color="blue", label="x (iteraciones)")
         ax.axhline(
-            C_opt, color="red", linestyle="--", label=f"C óptimo = {C_opt:.2e} F"
+            C_opt, color="red", linestyle="--", label=f"x óptimo = {C_opt:.6f}"
         )
 
         ax.set_xlabel("Iteración")
-        ax.set_ylabel("C (Capacitancia en F)")
-        ax.set_title("Convergencia de C por iteración (Newton-Raphson)")
+        ax.set_ylabel("x")
+        ax.set_title("Convergencia de Newton-Raphson")
         ax.legend()
         ax.grid(True)
 

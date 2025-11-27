@@ -226,10 +226,10 @@ class MainWindow(QMainWindow):
             lambda: self.stacked_widget.setCurrentIndex(1)
         )
         self.nonlinear_menu.button1.clicked.connect(
-            lambda: self.stacked_widget.setCurrentIndex(2)
+            lambda: self.stacked_widget.setCurrentIndex(3)
         )
         self.nonlinear_menu.button2.clicked.connect(
-            lambda: self.stacked_widget.setCurrentIndex(3)
+            lambda: self.stacked_widget.setCurrentIndex(2)
         )
         self.nonlinear_menu.button3.clicked.connect(
             lambda: self.stacked_widget.setCurrentIndex(4)

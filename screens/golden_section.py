@@ -1,4 +1,6 @@
 import math
+import sympy as sp
+import numpy as np
 from typing import Callable
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
@@ -29,7 +31,7 @@ class GoldenSectionScreen(QWidget):
         left_layout = QVBoxLayout(left_widget)
         left_layout.setSpacing(10)
 
-        title_label = QLabel("Método de la Sección Áurea")
+        title_label = QLabel("Método de la Región Dorada")
         title_label.setStyleSheet(
             "font-size: 18px; font-weight: bold; margin-bottom: 10px;"
         )
@@ -39,9 +41,7 @@ class GoldenSectionScreen(QWidget):
         param_font.setPointSize(10)
 
         param_list: list[tuple[str, str, str]] = [
-            ("a_coef", "Coeficiente a", "-1.5"),
-            ("b_coef", "Coeficiente b", "15"),
-            ("c_coef", "Coeficiente c", "-20"),
+            ("f", "Función f(x)", "-x**2 + 4*x + 5"),
             ("a_int", "Límite inferior (a)", "3"),
             ("b_int", "Límite superior (b)", "7"),
             ("n_iter", "Número de iteraciones", "3"),
@@ -138,29 +138,39 @@ class GoldenSectionScreen(QWidget):
 
     def run_calculation(self):
         try:
-            p = {name: float(widget.text()) for name, widget in self.params.items()}
-            p["n_iter"] = int(p["n_iter"])
-        except ValueError:
+            # Parse numeric parameters
+            a_int = float(self.params["a_int"].text())
+            b_int = float(self.params["b_int"].text())
+            n_iter = int(self.params["n_iter"].text())
+            
+            # Parse function
+            f_str = self.params["f"].text()
+            x = sp.Symbol("x")
+            f_expr = sp.sympify(f_str)
+            f_lambda = sp.lambdify(x, f_expr, "numpy")
+            
+            # Wrapper to ensure float return and handle numpy types if needed
+            def ingreso(val):
+                return float(f_lambda(val))
+
+        except Exception as e:
             QMessageBox.critical(
                 self,
                 "Error de Entrada",
-                "Por favor, ingresa valores numéricos válidos.",
+                f"Error al procesar la función o los parámetros:\n{str(e)}",
             )
             return
 
-        def ingreso(pr: float) -> float:
-            return p["a_coef"] * pr**2 + p["b_coef"] * pr + p["c_coef"]
-
         p_opt, tabla, puntos = self.golden_section_max(
-            ingreso, p["a_int"], p["b_int"], p["n_iter"]
+            ingreso, a_int, b_int, n_iter
         )
         I_opt = ingreso(p_opt)
 
-        self.result_p_label.setText(f"<b>Óptimo:</b> {p_opt*100:.2f} $")
-        self.result_i_label.setText(f"<b>Máximo:</b> {I_opt*1000:.2f} $")
+        self.result_p_label.setText(f"<b>Óptimo:</b> {p_opt:.4f}")
+        self.result_i_label.setText(f"<b>f(x):</b> {I_opt:.4f}")
 
         self.populate_table(tabla)
-        self.plot_function(ingreso, p["a_int"], p["b_int"], puntos, p_opt, I_opt)
+        self.plot_function(ingreso, a_int, b_int, puntos, p_opt, I_opt)
 
     def populate_table(self, tabla):
         self.table_widget.setRowCount(len(tabla))
@@ -185,33 +195,40 @@ class GoldenSectionScreen(QWidget):
         self.figure.clear()
         ax = self.figure.add_subplot(111)
 
-        p_values: list[float] = [a + i * (b - a) / 200 for i in range(201)]
-        I_values: list[float] = [f(p) for p in p_values]
+        # Use numpy for smoother plotting
+        x_vals = np.linspace(a, b, 200)
+        try:
+            # Handle if f can take array input directly (which lambdify usually supports)
+            y_vals = f(x_vals)
+        except:
+            # Fallback for functions that might not vectorize well automatically
+            y_vals = np.array([f(x) for x in x_vals])
+
         ax.plot(
-            [p * 100 for p in p_values],
-            [I * 1000 for I in I_values],
-            label="Ingreso ($)",
+            x_vals,
+            y_vals,
+            label="f(x)",
             color="blue",
         )
 
         for i, (px, Ix) in enumerate(puntos):
             label = f"Iter. {math.ceil((i+1)/2)}" if i % 2 == 0 else None
             ax.scatter(
-                px * 100, Ix * 1000, color="green", s=50, marker="x", label=label
+                px, Ix, color="green", s=50, marker="x", label=label
             )
 
         ax.scatter(
-            p_opt * 100,
-            I_opt * 1000,
+            p_opt,
+            I_opt,
             color="red",
             s=100,
             zorder=5,
-            label=f"Máximo ({p_opt*100:.2f}$, {I_opt*1000:.2f}$)",
+            label=f"Optimum ({p_opt:.4f}, {I_opt:.4f})",
         )
 
-        ax.set_title("Maximización de Ingresos - Sección Áurea")
-        ax.set_xlabel("Precio ($)")
-        ax.set_ylabel("Ingreso ($)")
+        ax.set_title("Método de la Sección Áurea")
+        ax.set_xlabel("x")
+        ax.set_ylabel("f(x)")
         ax.legend()
         ax.grid(True)
         self.canvas.draw()
