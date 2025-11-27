@@ -239,7 +239,7 @@ class GoldenSectionScreen(QWidget):
             label=f"Optimum ({p_opt:.4f}, {I_opt:.4f})",
         )
 
-        ax.set_title("Método de la Sección Áurea")
+        ax.set_title("Método de la Región Dorada")
         ax.set_xlabel("x")
         ax.set_ylabel("f(x)")
         ax.legend()
@@ -707,7 +707,7 @@ class NonLinearMenuScreen(QWidget):
         )
 
         self.button1 = QPushButton("Método Newton-Raphson")
-        self.button2 = QPushButton("Método de la región dorada")
+        self.button2 = QPushButton("Método de la Región Dorada")
         self.button3 = QPushButton("Gradiente y Hessiano")
 
         top_layout.addWidget(title_label)
