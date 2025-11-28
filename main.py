@@ -1337,6 +1337,36 @@ class WelcomeScreen(QWidget):
         main_layout.addWidget(course_label)
         main_layout.addLayout(buttons_layout)
 
+        # --- Sección de Autores ---
+        authors_layout = QVBoxLayout()
+        authors_layout.setSpacing(5)
+        authors_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        authors_title = QLabel("Autores:")
+        authors_title.setStyleSheet(
+            "font-size: 16px; font-weight: bold; margin-top: 20px; color: #555;"
+        )
+        authors_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        authors_layout.addWidget(authors_title)
+
+        authors_list = [
+            "Adauto Helen",
+            "Alarcón Giomar",
+            "Liberato Dayana",
+            "Vidal Blanca",
+        ]
+
+        author_font = QFont()
+        author_font.setPointSize(12)
+
+        for author in authors_list:
+            lbl = QLabel(author)
+            lbl.setFont(author_font)
+            lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            authors_layout.addWidget(lbl)
+
+        main_layout.addLayout(authors_layout)
+
 
 # =============================================================================
 # PANTALLA: MENÚ DE PROGRAMACIÓN NO LINEAL
